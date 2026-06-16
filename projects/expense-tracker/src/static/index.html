@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendWise | INR Expense Tracker & Exchange Rates</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Header -->
+        <header class="main-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-wallet"></i></div>
+                <div class="logo-text">
+                    <h1>SpendWise</h1>
+                    <span>Finance Optimizer</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="budget-setting">
+                    <label for="budget-input"><i class="fa-solid fa-bullseye"></i> Monthly Budget:</label>
+                    <div class="budget-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" id="budget-input" value="40000" min="1000">
+                    </div>
+                </div>
+                <button id="reset-mock-btn" class="btn btn-secondary btn-sm" title="Seed 30 realistic expenses">
+                    <i class="fa-solid fa-database"></i> Seed Mock Data
+                </button>
+            </div>
+        </header>
+
+        <!-- Budget & KPIs Panel -->
+        <section class="budget-summary card">
+            <div class="card-glow"></div>
+            <div class="budget-header">
+                <h3><i class="fa-solid fa-chart-pie"></i> Budget Performance</h3>
+                <span id="budget-percent">0% Spent</span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="budget-progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="budget-footer-metrics">
+                <span>Spent: <strong id="budget-spent">₹0.00</strong></span>
+                <span>Remaining: <strong id="budget-remaining">₹40,000.00</strong></span>
+            </div>
+        </section>
+
+        <!-- KPI Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card card">
+                <div class="kpi-icon color-blue"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Expenses</span>
+                    <h2 id="kpi-total">₹0.00</h2>
+                </div>
+            </div>
+            <div class="kpi-card card">
+                <div class="kpi-icon color-teal"><i class="fa-solid fa-calculator"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Daily Average</span>
+                    <h2 id="kpi-daily-avg">₹0.00</h2>
+                </div>
+            </div>
+            <div class="kpi-card card">
+                <div class="kpi-icon color-purple"><i class="fa-solid fa-tags"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Highest Category</span>
+                    <h2 id="kpi-highest-cat">-</h2>
+                </div>
+            </div>
+            <div class="kpi-card card">
+                <div class="kpi-icon color-green"><i class="fa-solid fa-receipt"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Receipts Count</span>
+                    <h2 id="kpi-count">0</h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- Operations Area (Add, Upload, Converter) -->
+        <section class="operations-grid">
+            <!-- Add Expense Card -->
+            <div class="ops-card card">
+                <h3 id="form-title"><i class="fa-solid fa-plus-minus"></i> Add New Expense</h3>
+                <form id="expense-form" class="expense-form">
+                    <input type="hidden" id="expense-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="amount">Amount (₹)</label>
+                            <input type="number" id="amount" step="0.01" min="0.01" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="date" id="date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" required>
+                            <option value="" disabled selected>Select Category</option>
+                            <option value="Food & Dining">Food & Dining</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Housing">Housing</option>
+                            <option value="Health & Wellness">Health & Wellness</option>
+                            <option value="Miscellaneous">Miscellaneous</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" placeholder="e.g. Grocery shopping, Starbucks">
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" id="save-btn" class="btn btn-primary btn-glow">
+                            <i class="fa-solid fa-save"></i> Save Transaction
+                        </button>
+                        <button type="button" id="cancel-btn" class="btn btn-secondary hidden">
+                            Cancel Edit
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Import/Export Card -->
+            <div class="ops-card card">
+                <h3><i class="fa-solid fa-file-csv"></i> Import & Export</h3>
+                <p class="ops-desc">Bulk import transactions from a CSV file, or download a spreadsheet report formatted in Excel style with openpyxl charts.</p>
+                
+                <div class="drag-drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept=".csv" class="hidden-file-input">
+                    <i class="fa-solid fa-cloud-arrow-up text-glow-green"></i>
+                    <h4>Drag & Drop CSV here</h4>
+                    <span>or click to browse</span>
+                </div>
+                
+                <div class="ops-actions mt-4">
+                    <a href="/api/expenses/export-excel" class="btn btn-success btn-glow full-width text-center" target="_blank">
+                        <i class="fa-solid fa-file-excel"></i> Export Styled Excel (.xlsx)
+                    </a>
+                    <a href="/api/expenses/download-sample-csv" class="btn btn-secondary full-width text-center mt-2" target="_blank">
+                        <i class="fa-solid fa-download"></i> Download CSV Template
+                    </a>
+                </div>
+            </div>
+
+            <!-- Currency Comparison & Converter Card -->
+            <div class="ops-card card full-width-tablet">
+                <h3><i class="fa-solid fa-circle-dollar-to-slot"></i> Currency Exchange Converter</h3>
+                <p class="ops-desc">Compare rupees against other countries. Converts amounts in real-time utilizing live rates (with stable fallbacks).</p>
+                
+                <div class="currency-converter">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="conv-amount">Convert Amount</label>
+                            <input type="number" id="conv-amount" value="100" min="1" step="any">
+                        </div>
+                        <div class="form-group">
+                            <label for="conv-from">From Currency</label>
+                            <select id="conv-from">
+                                <option value="INR" selected>INR - Indian Rupee (₹)</option>
+                                <option value="USD">USD - US Dollar ($)</option>
+                                <option value="EUR">EUR - Euro (€)</option>
+                                <option value="GBP">GBP - British Pound (£)</option>
+                                <option value="AED">AED - UAE Dirham (Dh)</option>
+                                <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                                <option value="JPY">JPY - Japanese Yen (¥)</option>
+                                <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row mt-2">
+                        <div class="form-group">
+                            <label for="conv-to">To Currency</label>
+                            <select id="conv-to">
+                                <option value="INR">INR - Indian Rupee (₹)</option>
+                                <option value="USD" selected>USD - US Dollar ($)</option>
+                                <option value="EUR">EUR - Euro (€)</option>
+                                <option value="GBP">GBP - British Pound (£)</option>
+                                <option value="AED">AED - UAE Dirham (Dh)</option>
+                                <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                                <option value="JPY">JPY - Japanese Yen (¥)</option>
+                                <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Converted Result</label>
+                            <div class="conv-result-display" id="conv-result">Loading exchange rates...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison grid -->
+                <div class="comparison-list mt-4">
+                    <div class="comp-title-bar">
+                        <h5>Rupee Comparison Matrix (Base: 100 ₹)</h5>
+                        <button id="refresh-rates-btn" class="btn btn-secondary btn-sm" title="Refresh rates">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh Rates
+                        </button>
+                    </div>
+                    <div class="rates-grid" id="rates-grid">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Dashboard Section -->
+        <section class="charts-grid">
+            <div class="chart-card card">
+                <h3>Category Share Analysis</h3>
+                <div class="canvas-container">
+                    <canvas id="chart-category"></canvas>
+                </div>
+            </div>
+            <div class="chart-card card">
+                <h3>Daily Spending Trend</h3>
+                <div class="canvas-container">
+                    <canvas id="chart-trend"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expense Table Section -->
+        <section class="table-card card">
+            <div class="table-controls">
+                <h3><i class="fa-solid fa-list-check"></i> Transactions Ledger</h3>
+                
+                <div class="filter-controls">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="search-input" placeholder="Search description...">
+                    </div>
+                    <select id="filter-category">
+                        <option value="all">All Categories</option>
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Housing">Housing</option>
+                        <option value="Health & Wellness">Health & Wellness</option>
+                        <option value="Miscellaneous">Miscellaneous</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="expenses-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th class="text-right">Amount</th>
+                            <th class="text-center" style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-container">
+                <span id="page-indicator">Showing 1-10 of 10</span>
+                <div class="pagination-buttons">
+                    <button id="prev-page-btn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+                    <button id="next-page-btn" class="btn btn-secondary btn-sm">Next <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <p>SpendWise Expense Tracker &copy; 2026. Powered by FastAPI, SQLite, openpyxl, and Chart.js.</p>
+        </footer>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
