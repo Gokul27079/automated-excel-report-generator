@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExcelFlow | Automated Excel Report Generator</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar or Header -->
+        <header class="main-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-file-excel"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>ExcelFlow</h1>
+                    <span>Automated BI Reporter</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span id="cache-badge" class="badge badge-inactive">
+                    <i class="fa-solid fa-database"></i> No Cached Data
+                </span>
+                <button id="clear-cache-btn" class="btn btn-secondary btn-sm hidden" title="Clear cached data">
+                    <i class="fa-solid fa-trash-can"></i> Clear Cache
+                </button>
+            </div>
+        </header>
+
+        <main class="dashboard-content">
+            <!-- Upload & Setup Section -->
+            <section class="upload-section card">
+                <div class="card-glow"></div>
+                <div class="upload-grid">
+                    <div class="upload-area" id="drop-zone">
+                        <input type="file" id="file-input" accept=".csv" class="hidden-file-input">
+                        <div class="upload-icon-wrapper">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <h3>Drag & Drop Sales CSV</h3>
+                        <p>or click to browse your computer</p>
+                        <span class="file-spec">Supports messy sales data with nulls, duplicates & type issues</span>
+                    </div>
+                    
+                    <div class="upload-options">
+                        <div class="option-card">
+                            <h4>Quick Start Demonstration</h4>
+                            <p>Don't have a sales CSV ready? Use our pre-configured messy mock dataset containing 250 sales records with duplicates and null values to see the cleaning and reporting pipeline in action.</p>
+                            <div class="btn-group">
+                                <button id="load-mock-btn" class="btn btn-primary btn-glow">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Mock Data
+                                </button>
+                                <a id="download-mock-csv-btn" href="/api/download-mock-csv" class="btn btn-secondary" target="_blank">
+                                    <i class="fa-solid fa-download"></i> Download Sample CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Progress Loader -->
+                <div id="loader" class="loader-container hidden">
+                    <div class="spinner"></div>
+                    <p>Orchestrating pipeline: Ingesting ➜ Cleaning ➜ Analyzing ➜ Generating Excel...</p>
+                </div>
+            </section>
+
+            <!-- Results Section (Visible only when data is loaded) -->
+            <div id="results-container" class="results-container hidden">
+                
+                <!-- Pipeline Metrics Alert -->
+                <div id="pipeline-alert" class="pipeline-alert card">
+                    <div class="alert-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="alert-content">
+                        <h4>Pipeline Executed Successfully!</h4>
+                        <p id="pipeline-details">Raw data ingested: 0 rows | Cleaned data: 0 rows (Removed 0 nulls, 0 duplicate orders)</p>
+                    </div>
+                    <button id="download-xlsx-btn" class="btn btn-success btn-lg btn-glow">
+                        <i class="fa-solid fa-file-arrow-down"></i> Download Excel Report (.xlsx)
+                    </button>
+                </div>
+
+                <!-- KPI Cards -->
+                <section class="kpi-grid">
+                    <div class="kpi-card card">
+                        <div class="kpi-icon color-blue"><i class="fa-solid fa-money-bill-wave"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Revenue</span>
+                            <h2 id="kpi-revenue" class="kpi-value">$0.00</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card card">
+                        <div class="kpi-icon color-purple"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Orders</span>
+                            <h2 id="kpi-orders" class="kpi-value">0</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card card">
+                        <div class="kpi-icon color-teal"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Average Order Value</span>
+                            <h2 id="kpi-aov" class="kpi-value">$0.00</h2>
+                        </div>
+                    </div>
+                    <div class="kpi-card card">
+                        <div class="kpi-icon color-green"><i class="fa-solid fa-filter"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Data Efficiency</span>
+                            <h2 id="kpi-efficiency" class="kpi-value">100%</h2>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation Tabs -->
+                <div class="tabs-container card">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="tab-analytics">
+                            <i class="fa-solid fa-table-list"></i> Summary Tables
+                        </button>
+                        <button class="tab-btn" data-tab="tab-charts">
+                            <i class="fa-solid fa-chart-pie"></i> Visual Charts
+                        </button>
+                        <button class="tab-btn" data-tab="tab-structure">
+                            <i class="fa-solid fa-sitemap"></i> Excel Structure
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="tab-content-container">
+                    
+                    <!-- Tab 1: Analytics Summary -->
+                    <div id="tab-analytics" class="tab-pane active">
+                        <div class="table-grid">
+                            <!-- Top Products Card -->
+                            <div class="table-card card">
+                                <h3><i class="fa-solid fa-ranking-star"></i> Top 10 Products by Revenue</h3>
+                                <div class="table-wrapper">
+                                    <table id="table-products">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th class="text-right">Revenue</th>
+                                                <th class="text-right">Qty Sold</th>
+                                                <th class="text-right">Orders</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Injected via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Regional Breakdown Card -->
+                            <div class="table-card card">
+                                <h3><i class="fa-solid fa-globe"></i> Region-wise Sales Breakdown</h3>
+                                <div class="table-wrapper">
+                                    <table id="table-regions">
+                                        <thead>
+                                            <tr>
+                                                <th>Region</th>
+                                                <th class="text-right">Revenue</th>
+                                                <th class="text-right">Orders</th>
+                                                <th class="text-right">Revenue Share</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Injected via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Trend Card (Full width below) -->
+                        <div class="table-card card full-width mt-4">
+                            <h3><i class="fa-solid fa-calendar-days"></i> Monthly Revenue Trend</h3>
+                            <div class="table-wrapper">
+                                <table id="table-monthly">
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th class="text-right">Revenue</th>
+                                            <th class="text-right">Total Orders</th>
+                                            <th class="text-right">Quantity Sold</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Visual Charts -->
+                    <div id="tab-charts" class="tab-pane">
+                        <div class="charts-grid">
+                            <div class="chart-card card">
+                                <h3>Top 5 Products Revenue ($)</h3>
+                                <div class="canvas-container">
+                                    <canvas id="js-chart-products"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card card">
+                                <h3>Revenue Share by Region</h3>
+                                <div class="canvas-container">
+                                    <canvas id="js-chart-regions"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card card full-width">
+                                <h3>Monthly Revenue Trend</h3>
+                                <div class="canvas-container-wide">
+                                    <canvas id="js-chart-monthly"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Excel Structure -->
+                    <div id="tab-structure" class="tab-pane">
+                        <div class="structure-card card">
+                            <h3>Generated Excel Document Architecture</h3>
+                            <p class="structure-subtitle">The downloadable Excel file is organized into 4 sheets, designed to mimic a professional enterprise BI report:</p>
+                            
+                            <div class="sheets-list">
+                                <div class="sheet-info-item">
+                                    <div class="sheet-number bg-blue">Sheet 1</div>
+                                    <div class="sheet-desc">
+                                        <h4>Raw Data</h4>
+                                        <p>Contains the original raw CSV data as uploaded. The header row is styled with a professional dark blue background (#1F4E78) and white bold font. Gridlines are explicitly enabled, columns are auto-fit to cell sizes, and basic columns are aligned appropriately.</p>
+                                    </div>
+                                </div>
+                                <div class="sheet-info-item">
+                                    <div class="sheet-number bg-purple">Sheet 2</div>
+                                    <div class="sheet-desc">
+                                        <h4>Cleaned Data</h4>
+                                        <p>Contains the polished sales dataset after running the automated cleaning modules. Records with nulls in crucial ID or value columns are filtered out, duplicate orders are dropped, dates are standardized to YYYY-MM-DD, and text casings are corrected.</p>
+                                    </div>
+                                </div>
+                                <div class="sheet-info-item">
+                                    <div class="sheet-number bg-teal">Sheet 3</div>
+                                    <div class="sheet-desc">
+                                        <h4>Summary Report</h4>
+                                        <p>A beautifully formatted dashboard sheet containing: a styled side-by-side KPI Summary block, a Top 10 Products by Revenue table, a Monthly Revenue Trend table, and a Region-wise Sales Breakdown table. Includes automatic summary rows using native Excel formulas (e.g. <code>SUM(...)</code>).</p>
+                                    </div>
+                                </div>
+                                <div class="sheet-info-item">
+                                    <div class="sheet-number bg-green">Sheet 4</div>
+                                    <div class="sheet-desc">
+                                        <h4>Charts</h4>
+                                        <p>Houses high-resolution, presentation-grade vector charts generated during the pipeline run using Matplotlib. These include a Top 5 Products Bar Chart, a Monthly Revenue Trend Line Chart, and a Regional Share Donut Chart, embedded directly at specific anchors.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+        
+        <footer class="app-footer">
+            <p>ExcelFlow Automated Reporting Pipeline &copy; 2026. Made with FastAPI, Pandas, openpyxl, & Matplotlib.</p>
+        </footer>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
